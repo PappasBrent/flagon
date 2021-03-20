@@ -3,7 +3,7 @@ package parser
 import (
 	"fmt"
 
-	"github.com/PappasBrent/graph-spec/tokenization"
+	"github.com/PappasBrent/flagon/tokenization"
 )
 
 type graphParser struct {
