@@ -1,3 +1,3 @@
-module github.com/PappasBrent/graph-spec
+module github.com/PappasBrent/flagon
 
 go 1.16
