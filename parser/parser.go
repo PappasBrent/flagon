@@ -207,6 +207,15 @@ func (p *graphParser) parseNodesAndEdges() {
 				p.NodeMap[node.Line] = make(map[int]*Node)
 			}
 			p.NodeMap[node.Line][node.LeftColumn] = node
+
+			// Add node to graph
+			if node.Label != "" {
+				if _, exists := p.Graph.LabeledNodes[node.Label]; exists {
+					panic("Error: Two nodes with label " + node.Label)
+				}
+				p.Graph.LabeledNodes[node.Label] = node
+			}
+			p.Graph.Nodes = append(p.Graph.Nodes, node)
 		} else if p.CurrentToken.Type == tokenization.Dash {
 			edge := p.parseEdgeHorizontal()
 			if p.EdgeHorizontalMap[edge.TopLine] == nil {
@@ -214,6 +223,8 @@ func (p *graphParser) parseNodesAndEdges() {
 			}
 			p.EdgeHorizontalMap[edge.TopLine][edge.LeftColumn] = edge
 			p.EdgeHorizontalMap[edge.TopLine][edge.RightColumn] = edge
+
+			p.Graph.Edges = append(p.Graph.Edges, edge)
 		} else if p.CurrentToken.Type == tokenization.Pipe {
 			edge := p.parseEdgeVertical()
 			if p.EdgeVerticalMap[edge.TopLine] == nil {
@@ -224,6 +235,8 @@ func (p *graphParser) parseNodesAndEdges() {
 				p.EdgeVerticalMap[edge.BottomLine] = make(map[int]*Edge)
 			}
 			p.EdgeVerticalMap[edge.BottomLine][edge.LeftColumn] = edge
+
+			p.Graph.Edges = append(p.Graph.Edges, edge)
 		} else {
 			panic("Invalid architecture token found")
 		}
@@ -255,14 +268,6 @@ func (p *graphParser) connectNodesAndEdges() {
 				node.EdgeDown.DestinationLeftOrUp = node
 			}
 
-			// Add node to graph
-			if node.Label != "" {
-				if _, exists := p.Graph.LabeledNodes[node.Label]; exists {
-					panic("Error: Two nodes with label " + node.Label)
-				}
-				p.Graph.LabeledNodes[node.Label] = node
-			}
-			p.Graph.Nodes = append(p.Graph.Nodes, node)
 		}
 	}
 
@@ -271,7 +276,7 @@ func (p *graphParser) connectNodesAndEdges() {
 	for _, edgeMap := range edgeMaps {
 		for _, edgesInLine := range edgeMap {
 			for _, edge := range edgesInLine {
-				// Check if a edge has no nodes connected to it
+				// Check if an edge has no nodes connected to it
 				if edge.DestinationLeftOrUp == nil && edge.DestinationRightOrDown == nil {
 					panic("Warning: Edge to no nodes found")
 				}
@@ -283,7 +288,6 @@ func (p *graphParser) connectNodesAndEdges() {
 					}
 					p.Graph.LabeledEdges[edge.Label] = edge
 				}
-				p.Graph.Edges = append(p.Graph.Edges, edge)
 			}
 		}
 	}
