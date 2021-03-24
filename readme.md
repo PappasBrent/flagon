@@ -65,7 +65,7 @@ graph, _ := parser.Parse(text)
 ```
 
 ### Getting Nodes
-Graph structs have a LabeledNodes member containing a mapping of all labels to their
+Graph structs have a LabeledNodes field containing a mapping of all labels to their
 corresponding Node structs. Labels are strings.
 
 Example:
@@ -76,12 +76,12 @@ Example:
            []
 `
 
-  graph, _ := parser.Parse(text)
-	for label, node := range graph.LabeledNodes {
-		fmt.Printf("Parsed a node with label %v on line %v"+
-			" with left bracket at column %v\n",
-			label, node.Line, node.LeftColumn)
-	}
+    graph, _ := parser.Parse(text)
+    for label, node := range graph.LabeledNodes {
+        fmt.Printf("Parsed a node with label %v on line %v"+
+          " with left bracket at column %v\n",
+          label, node.Line, node.LeftColumn)
+    }
 ```
 
 Output:
@@ -91,13 +91,13 @@ Parsed a node with label B on line 1 with left bracket at column 8
 ```
 
 
-All of a graph's nodes are stored in its nodes member.
+All of a graph's nodes are stored in its Nodes field.
 Continuing from the previous example:
 ```go
   for _, node := range graph.Nodes {
-	  fmt.Printf("Parsed a node starting at line %v column %v\n",
-        node.Line, node.LeftColumn)
-	}
+    fmt.Printf("Parsed a node starting at line %v column %v\n",
+      node.Line, node.LeftColumn)
+  }
 ```
 
 Output:
@@ -108,6 +108,40 @@ Parsed a node starting at line 4 column 14
 ```
 
 ### Getting Edges
+Graph structs have a LabeledEdges field containing a mapping of all labels to their
+corresponding Edge structs. Labels are strings.
+
+Example:
+```go
+  for label, edge := range graph.LabeledEdges {
+    fmt.Printf("Parsed an edge with label %v with top-left at"+
+      " %v:%v and bottom-right at %v:%v\n", label, edge.TopLine,
+      edge.LeftColumn, edge.BottomLine, edge.RightColumn)
+  }
+```
+
+Output:
+```
+Parsed an edge with label AB with top-left at 1:4 and bottom-right at 1:7
+```
+
+
+All of a graph's edges are stored in its Edges field.
+Continuing from the previous example:
+```go
+  for _, edge := range graph.Edges {
+    fmt.Printf("Parsed an edge with top-left at"+
+      " %v:%v and bottom-right at %v:%v\n", edge.TopLine,
+      edge.LeftColumn, edge.BottomLine, edge.RightColumn)
+  }
+```
+
+Output:
+```
+Parsed an edge with top-left at 1:4 and bottom-right at 1:7
+Parsed an edge with top-left at 2:14 and bottom-right at 3:14
+```
+
 ### Traversing a Graph
 
 ## Testing
