@@ -145,5 +145,15 @@ Parsed an edge with top-left at 2:14 and bottom-right at 3:14
 ### Traversing a Graph
 
 ## Testing
+Use `go test` to run Flagon's tests.
+
+To run the tokenization tests use `go test ./tokenization`
+
+Parser tests have not yet been implemented. Use `go test ./parser` to run
+the parser tests once they have been added.
 
 ## Acknowledgments
+- The [Funciton esoteric programming language](https://esolangs.org/wiki/Funciton)
+for the idea
+- This research paper for suggestions on the implementation:
+Tomita M. (1991) Parsing 2-Dimensional Language. In: Tomita M. (eds) Current Issues in Parsing Technology. The Springer International Series in Engineering and Computer Science (Natural Language Processing and Machine Translation), vol 126. Springer, Boston, MA. https://doi.org/10.1007/978-1-4615-3986-5_18
