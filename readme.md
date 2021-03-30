@@ -19,6 +19,11 @@ Flagon stands for FLuid ASCII Graph Object Notation.
   - [Acknowledgments](#acknowledgments)
 
 ## Installation
+Run this command from your Go project directory to add Flagon to your project's
+go.mod file:
+```
+go get github.com/PappasBrent/flagon
+```
 
 ## Quick Start
 
