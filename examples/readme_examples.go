@@ -3,7 +3,7 @@ package examples
 import (
 	"fmt"
 
-	"github.com/PappasBrent/flagon/parser"
+	"github.com/PappasBrent/flagon"
 )
 
 func Parse_labeled_graph() {
@@ -13,7 +13,7 @@ func Parse_labeled_graph() {
              []
 `
 
-	graph, _ := parser.Parse(text)
+	graph, _ := flagon.Parse(text)
 	for label, node := range graph.LabeledNodes {
 		fmt.Printf("Parsed a node with label %v on line %v"+
 			" with left bracket at column %v\n",
