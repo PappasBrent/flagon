@@ -27,9 +27,9 @@ go get github.com/PappasBrent/flagon
 
 ## Quick Start
 
-Import the flagon parser:
+Import Flagon:
 ```go
-import "github.com/PappasBrent/flagon/parser"
+import "github.com/PappasBrent/flagon"
 ```
 
 Assign a string variable to the ASCII graph you would like to Flagon to parse:
@@ -44,7 +44,7 @@ text := `[A]-AB-[B]
 
 Parse the string variable with a call to the parser package's `Parse` method:
 ```go
-graph, _ := parser.Parse(text)
+graph, _ := flagon.Parse(text)
 ```
 
 Unnecessary labels for nodes and edges can be omitted, e.g., this is valid:
@@ -66,7 +66,7 @@ text := `[A]-AB-[B]
          []
 `
 
-graph, _ := parser.Parse(text)
+graph, _ := flagon.Parse(text)
 ```
 
 ### Getting Nodes
@@ -81,7 +81,7 @@ Example:
            []
 `
 
-    graph, _ := parser.Parse(text)
+    graph, _ := flagon.Parse(text)
     for label, node := range graph.LabeledNodes {
         fmt.Printf("Parsed a node with label %v on line %v"+
           " with left bracket at column %v\n",
