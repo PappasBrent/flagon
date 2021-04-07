@@ -42,7 +42,7 @@ text := `[A]-AB-[B]
 `
 ```
 
-Parse the string variable with a call to the parser package's `Parse` method:
+Parse the string variable with a call to the `Parse` function:
 ```go
 graph, _ := flagon.Parse(text)
 ```
