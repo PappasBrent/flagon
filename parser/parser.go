@@ -3,27 +3,27 @@ package parser
 import (
 	"fmt"
 
-	"github.com/PappasBrent/flagon/tokenization"
+	"github.com/PappasBrent/flagon/tokenizer"
 )
 
 type graphParser struct {
 	CurrentTokenIndex int
-	Tokens            []*tokenization.Token
-	CurrentToken      *tokenization.Token
-	UnusedTokens      map[*tokenization.Token]bool
-	TokenMap          map[int]map[int]*tokenization.Token
+	Tokens            []tokenizer.Token
+	CurrentToken      tokenizer.Token
+	UnusedTokens      map[tokenizer.Token]bool
+	TokenMap          map[int]map[int]tokenizer.Token
 	NodeMap           map[int]map[int]*Node
 	EdgeHorizontalMap map[int]map[int]*Edge
 	EdgeVerticalMap   map[int]map[int]*Edge
 	Graph             *Graph
 }
 
-func newGraphParser(tokens []*tokenization.Token) *graphParser {
-	tokenMap := make(map[int]map[int]*tokenization.Token)
-	unusedTokens := make(map[*tokenization.Token]bool)
+func newGraphParser(tokens []tokenizer.Token) *graphParser {
+	tokenMap := make(map[int]map[int]tokenizer.Token)
+	unusedTokens := make(map[tokenizer.Token]bool)
 	for _, token := range tokens {
 		if tokenMap[token.Line] == nil {
-			tokenMap[token.Line] = make(map[int]*tokenization.Token)
+			tokenMap[token.Line] = make(map[int]tokenizer.Token)
 		}
 		tokenMap[token.Line][token.Column] = token
 		unusedTokens[token] = true
@@ -31,7 +31,7 @@ func newGraphParser(tokens []*tokenization.Token) *graphParser {
 	p := graphParser{
 		-1,
 		tokens,
-		nil,
+		tokenizer.Token{},
 		unusedTokens,
 		tokenMap,
 		make(map[int]map[int]*Node),
@@ -44,13 +44,16 @@ func newGraphParser(tokens []*tokenization.Token) *graphParser {
 			make(map[string]*Edge),
 		},
 	}
+	for _, t := range p.Tokens {
+		fmt.Println(t)
+	}
 	p.advanceForward()
 	return &p
 }
 
 // Gets the next token to the right based upon the current token location
-func (p *graphParser) getNextTokenRight() *tokenization.Token {
-	if p.CurrentToken == nil {
+func (p *graphParser) getNextTokenRight() tokenizer.Token {
+	if p.CurrentToken == (tokenizer.Token{}) {
 		return p.Tokens[0]
 	}
 	for _, token := range p.Tokens[p.CurrentTokenIndex+1:] {
@@ -58,12 +61,12 @@ func (p *graphParser) getNextTokenRight() *tokenization.Token {
 			return token
 		}
 	}
-	return nil
+	return tokenizer.Token{}
 }
 
 // Gets the next token down based upon the current token location
-func (p *graphParser) getNextTokendown() *tokenization.Token {
-	if p.CurrentToken == nil {
+func (p *graphParser) getNextTokendown() tokenizer.Token {
+	if p.CurrentToken == (tokenizer.Token{}) {
 		panic("Current token may not be null when getting next token down")
 	}
 	for _, token := range p.Tokens[p.CurrentTokenIndex+1:] {
@@ -71,14 +74,14 @@ func (p *graphParser) getNextTokendown() *tokenization.Token {
 			return token
 		}
 	}
-	return nil
+	return tokenizer.Token{}
 }
 
 // Advance to the next token in the stream
 func (p *graphParser) advanceForward() {
 	p.CurrentTokenIndex++
 	if p.CurrentTokenIndex >= len(p.Tokens) {
-		p.CurrentToken = nil
+		p.CurrentToken = tokenizer.Token{}
 		return
 	}
 	delete(p.UnusedTokens, p.CurrentToken)
@@ -97,9 +100,9 @@ func (p *graphParser) advanceDown() {
 	p.CurrentToken = p.getNextTokendown()
 }
 
-func (p *graphParser) acceptRight(expected tokenization.TokenType) bool {
+func (p *graphParser) acceptRight(expected tokenizer.TokenType) bool {
 	nextTokenRight := p.getNextTokenRight()
-	if nextTokenRight == nil || nextTokenRight.Type != expected {
+	if nextTokenRight == (tokenizer.Token{}) || nextTokenRight.Type != expected {
 		return false
 	} else {
 		p.advanceRight()
@@ -107,9 +110,9 @@ func (p *graphParser) acceptRight(expected tokenization.TokenType) bool {
 	}
 }
 
-func (p *graphParser) acceptDown(expected tokenization.TokenType) bool {
+func (p *graphParser) acceptDown(expected tokenizer.TokenType) bool {
 	nextTokenDown := p.getNextTokendown()
-	if nextTokenDown == nil || nextTokenDown.Type != expected {
+	if nextTokenDown == (tokenizer.Token{}) || nextTokenDown.Type != expected {
 		return false
 	} else {
 		p.advanceDown()
@@ -131,10 +134,10 @@ func (p *graphParser) parseNode() *Node {
 		nil,
 		nil,
 	}
-	if p.acceptRight(tokenization.Label) {
+	if p.acceptRight(tokenizer.Label) {
 		node.Label = p.CurrentToken.Value
 	}
-	if !p.acceptRight(tokenization.RightBracket) {
+	if !p.acceptRight(tokenizer.RightBracket) {
 		s := fmt.Sprintf("Expected Rightbracket to close node %d %d", p.CurrentToken.Line, p.CurrentToken.Column)
 		panic(s)
 	}
@@ -154,14 +157,14 @@ func (p *graphParser) parseEdgeHorizontal() *Edge {
 		nil,
 		nil,
 	}
-	for p.acceptRight(tokenization.Dash) {
+	for p.acceptRight(tokenizer.Dash) {
 	}
-	if p.acceptRight(tokenization.Label) {
+	if p.acceptRight(tokenizer.Label) {
 		edge.Label = p.CurrentToken.Value
-		if !p.acceptRight(tokenization.Dash) {
+		if !p.acceptRight(tokenizer.Dash) {
 			panic("Expected a dash after lock name")
 		}
-		for p.acceptRight(tokenization.Dash) {
+		for p.acceptRight(tokenizer.Dash) {
 		}
 	}
 	edge.RightColumn = p.CurrentToken.Column
@@ -180,14 +183,14 @@ func (p *graphParser) parseEdgeVertical() *Edge {
 		nil,
 		nil,
 	}
-	for p.acceptDown(tokenization.Pipe) {
+	for p.acceptDown(tokenizer.Pipe) {
 	}
-	if p.acceptDown(tokenization.Label) {
+	if p.acceptDown(tokenizer.Label) {
 		edge.Label = p.CurrentToken.Value
-		if !p.acceptDown(tokenization.Pipe) {
+		if !p.acceptDown(tokenizer.Pipe) {
 			panic("Expected a pipe after lock name")
 		}
-		for p.acceptDown(tokenization.Pipe) {
+		for p.acceptDown(tokenizer.Pipe) {
 		}
 	}
 	edge.BottomLine = p.CurrentToken.Line
@@ -195,13 +198,13 @@ func (p *graphParser) parseEdgeVertical() *Edge {
 }
 
 func (p *graphParser) parseNodesAndEdges() {
-	for p.CurrentToken != nil {
+	for p.CurrentToken != (tokenizer.Token{}) {
 		if _, unused := p.UnusedTokens[p.CurrentToken]; !unused {
 			p.advanceForward()
 			continue
 		}
 
-		if p.CurrentToken.Type == tokenization.LeftBracket {
+		if p.CurrentToken.Type == tokenizer.LeftBracket {
 			node := p.parseNode()
 			if p.NodeMap[node.Line] == nil {
 				p.NodeMap[node.Line] = make(map[int]*Node)
@@ -216,7 +219,7 @@ func (p *graphParser) parseNodesAndEdges() {
 				p.Graph.LabeledNodes[node.Label] = node
 			}
 			p.Graph.Nodes = append(p.Graph.Nodes, node)
-		} else if p.CurrentToken.Type == tokenization.Dash {
+		} else if p.CurrentToken.Type == tokenizer.Dash {
 			edge := p.parseEdgeHorizontal()
 			if p.EdgeHorizontalMap[edge.TopLine] == nil {
 				p.EdgeHorizontalMap[edge.TopLine] = make(map[int]*Edge)
@@ -225,7 +228,7 @@ func (p *graphParser) parseNodesAndEdges() {
 			p.EdgeHorizontalMap[edge.TopLine][edge.RightColumn] = edge
 
 			p.Graph.Edges = append(p.Graph.Edges, edge)
-		} else if p.CurrentToken.Type == tokenization.Pipe {
+		} else if p.CurrentToken.Type == tokenizer.Pipe {
 			edge := p.parseEdgeVertical()
 			if p.EdgeVerticalMap[edge.TopLine] == nil {
 				p.EdgeVerticalMap[edge.TopLine] = make(map[int]*Edge)
@@ -238,7 +241,9 @@ func (p *graphParser) parseNodesAndEdges() {
 
 			p.Graph.Edges = append(p.Graph.Edges, edge)
 		} else {
-			panic("Invalid architecture token found")
+			panic(
+				fmt.Sprintf("Invalid architecture token found: %q", p.CurrentToken),
+			)
 		}
 
 		p.advanceForward()
@@ -295,8 +300,14 @@ func (p *graphParser) connectNodesAndEdges() {
 
 // Parses a given piece of text into a graph
 func Parse(text string) (*Graph, error) {
-	tokens, err := tokenization.Tokenize(text)
-	if err != nil {
+	tzr := tokenizer.New(text)
+	tokens := make([]tokenizer.Token, 0)
+	var token tokenizer.Token
+	var err error
+	for token, err = tzr.Next(); err == nil; token, err = tzr.Next() {
+		tokens = append(tokens, token)
+	}
+	if _, stopped := err.(*tokenizer.StopIteration); !stopped {
 		return nil, err
 	}
 
