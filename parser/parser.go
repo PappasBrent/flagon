@@ -44,9 +44,6 @@ func newGraphParser(tokens []tokenizer.Token) *graphParser {
 			make(map[string]*Edge),
 		},
 	}
-	for _, t := range p.Tokens {
-		fmt.Println(t)
-	}
 	p.advanceForward()
 	return &p
 }
@@ -65,16 +62,17 @@ func (p *graphParser) getNextTokenRight() tokenizer.Token {
 }
 
 // Gets the next token down based upon the current token location
-func (p *graphParser) getNextTokendown() tokenizer.Token {
+func (p *graphParser) getNextTokendown() (tokenizer.Token, error) {
 	if p.CurrentToken == (tokenizer.Token{}) {
-		panic("Current token may not be null when getting next token down")
+		return tokenizer.Token{}, fmt.Errorf("current token may not be null when getting next token down")
 	}
 	for _, token := range p.Tokens[p.CurrentTokenIndex+1:] {
 		if token.Line > p.CurrentToken.Line && token.Column == p.CurrentToken.Column {
-			return token
+			return token, nil
 		}
 	}
-	return tokenizer.Token{}
+	// TODO: Create an error for no further token down existing
+	return tokenizer.Token{}, nil
 }
 
 // Advance to the next token in the stream
@@ -95,9 +93,14 @@ func (p *graphParser) advanceRight() {
 }
 
 // Advances the parser's current token down
-func (p *graphParser) advanceDown() {
+func (p *graphParser) advanceDown() error {
 	delete(p.UnusedTokens, p.CurrentToken)
-	p.CurrentToken = p.getNextTokendown()
+	t, err := p.getNextTokendown()
+	if err != nil {
+		return err
+	}
+	p.CurrentToken = t
+	return nil
 }
 
 func (p *graphParser) acceptRight(expected tokenizer.TokenType) bool {
@@ -110,17 +113,20 @@ func (p *graphParser) acceptRight(expected tokenizer.TokenType) bool {
 	}
 }
 
-func (p *graphParser) acceptDown(expected tokenizer.TokenType) bool {
-	nextTokenDown := p.getNextTokendown()
+func (p *graphParser) acceptDown(expected tokenizer.TokenType) (bool, error) {
+	nextTokenDown, err := p.getNextTokendown()
+	if err != nil {
+		return false, err
+	}
 	if nextTokenDown == (tokenizer.Token{}) || nextTokenDown.Type != expected {
-		return false
+		return false, nil
 	} else {
 		p.advanceDown()
-		return true
+		return true, nil
 	}
 }
 
-func (p *graphParser) parseNode() *Node {
+func (p *graphParser) parseNode() (*Node, error) {
 	// Current token: LeftBracket
 	// Node -> LeftBracket [Label] RightBracket
 	// Should make a new function, ParseItems
@@ -138,14 +144,13 @@ func (p *graphParser) parseNode() *Node {
 		node.Label = p.CurrentToken.Value
 	}
 	if !p.acceptRight(tokenizer.RightBracket) {
-		s := fmt.Sprintf("Expected Rightbracket to close node %d %d", p.CurrentToken.Line, p.CurrentToken.Column)
-		panic(s)
+		return nil, fmt.Errorf("expected Rightbracket to close node %d %d", p.CurrentToken.Line, p.CurrentToken.Column)
 	}
 	node.RightColumn = p.CurrentToken.Column
-	return node
+	return node, nil
 }
 
-func (p *graphParser) parseEdgeHorizontal() *Edge {
+func (p *graphParser) parseEdgeHorizontal() (*Edge, error) {
 	// Current token: Dash
 	// HorizontalEdge -> Dash {Dash} [Label Dash {Dash}]
 	edge := &Edge{
@@ -162,16 +167,16 @@ func (p *graphParser) parseEdgeHorizontal() *Edge {
 	if p.acceptRight(tokenizer.Label) {
 		edge.Label = p.CurrentToken.Value
 		if !p.acceptRight(tokenizer.Dash) {
-			panic("Expected a dash after lock name")
+			return nil, fmt.Errorf("expected a dash after label %q", edge.Label)
 		}
 		for p.acceptRight(tokenizer.Dash) {
 		}
 	}
 	edge.RightColumn = p.CurrentToken.Column
-	return edge
+	return edge, nil
 }
 
-func (p *graphParser) parseEdgeVertical() *Edge {
+func (p *graphParser) parseEdgeVertical() (*Edge, error) {
 	// Current token: Pipe
 	// VerticalEdge (parses down) -> Pipe {Pipe} [Label Pipe {Pipe}]
 	edge := &Edge{
@@ -183,21 +188,35 @@ func (p *graphParser) parseEdgeVertical() *Edge {
 		nil,
 		nil,
 	}
-	for p.acceptDown(tokenizer.Pipe) {
+	var accepted bool
+	var err error
+	for accepted, err = p.acceptDown(tokenizer.Pipe); err == nil && accepted; accepted, err = p.acceptDown(tokenizer.Pipe) {
 	}
-	if p.acceptDown(tokenizer.Label) {
+	if err != nil {
+		return nil, err
+	}
+	accepted, err = p.acceptDown(tokenizer.Label)
+	if err != nil {
+		return nil, err
+	}
+	if accepted {
 		edge.Label = p.CurrentToken.Value
-		if !p.acceptDown(tokenizer.Pipe) {
-			panic("Expected a pipe after lock name")
+		if accepted, err = p.acceptDown(tokenizer.Pipe); err != nil {
+			return nil, err
+		} else if !accepted {
+			return nil, fmt.Errorf("expected a pipe after label %q", edge.Label)
 		}
-		for p.acceptDown(tokenizer.Pipe) {
+		for accepted, err = p.acceptDown(tokenizer.Pipe); err == nil && accepted; accepted, err = p.acceptDown(tokenizer.Pipe) {
+		}
+		if err != nil {
+			return nil, err
 		}
 	}
 	edge.BottomLine = p.CurrentToken.Line
-	return edge
+	return edge, nil
 }
 
-func (p *graphParser) parseNodesAndEdges() {
+func (p *graphParser) parseNodesAndEdges() error {
 	for p.CurrentToken != (tokenizer.Token{}) {
 		if _, unused := p.UnusedTokens[p.CurrentToken]; !unused {
 			p.advanceForward()
@@ -205,7 +224,10 @@ func (p *graphParser) parseNodesAndEdges() {
 		}
 
 		if p.CurrentToken.Type == tokenizer.LeftBracket {
-			node := p.parseNode()
+			node, err := p.parseNode()
+			if err != nil {
+				return err
+			}
 			if p.NodeMap[node.Line] == nil {
 				p.NodeMap[node.Line] = make(map[int]*Node)
 			}
@@ -214,13 +236,16 @@ func (p *graphParser) parseNodesAndEdges() {
 			// Add node to graph
 			if node.Label != "" {
 				if _, exists := p.Graph.LabeledNodes[node.Label]; exists {
-					panic("Error: Two nodes with label " + node.Label)
+					return fmt.Errorf("two nodes with label %v", node.Label)
 				}
 				p.Graph.LabeledNodes[node.Label] = node
 			}
 			p.Graph.Nodes = append(p.Graph.Nodes, node)
 		} else if p.CurrentToken.Type == tokenizer.Dash {
-			edge := p.parseEdgeHorizontal()
+			edge, err := p.parseEdgeHorizontal()
+			if err != nil {
+				return err
+			}
 			if p.EdgeHorizontalMap[edge.TopLine] == nil {
 				p.EdgeHorizontalMap[edge.TopLine] = make(map[int]*Edge)
 			}
@@ -229,7 +254,10 @@ func (p *graphParser) parseNodesAndEdges() {
 
 			p.Graph.Edges = append(p.Graph.Edges, edge)
 		} else if p.CurrentToken.Type == tokenizer.Pipe {
-			edge := p.parseEdgeVertical()
+			edge, err := p.parseEdgeVertical()
+			if err != nil {
+				return err
+			}
 			if p.EdgeVerticalMap[edge.TopLine] == nil {
 				p.EdgeVerticalMap[edge.TopLine] = make(map[int]*Edge)
 			}
@@ -241,16 +269,15 @@ func (p *graphParser) parseNodesAndEdges() {
 
 			p.Graph.Edges = append(p.Graph.Edges, edge)
 		} else {
-			panic(
-				fmt.Sprintf("Invalid architecture token found: %q", p.CurrentToken),
-			)
+			return fmt.Errorf("invalid architecture token found: %q", p.CurrentToken)
 		}
 
 		p.advanceForward()
 	}
+	return nil
 }
 
-func (p *graphParser) connectNodesAndEdges() {
+func (p *graphParser) connectNodesAndEdges() error {
 	// Link nodes to edges
 	for _, nodesInLine := range p.NodeMap {
 		for _, node := range nodesInLine {
@@ -283,19 +310,20 @@ func (p *graphParser) connectNodesAndEdges() {
 			for _, edge := range edgesInLine {
 				// Check if an edge has no nodes connected to it
 				if edge.DestinationLeftOrUp == nil && edge.DestinationRightOrDown == nil {
-					panic("Warning: Edge to no nodes found")
+					return fmt.Errorf("edge to no nodes found: %q", edge.Label)
 				}
 
 				// Add edge to graph
 				if edge.Label != "" {
 					if foundEdge, exists := p.Graph.LabeledEdges[edge.Label]; exists && foundEdge != edge {
-						panic("Error: Two edges with label " + edge.Label)
+						return fmt.Errorf("two edges with label %q", edge.Label)
 					}
 					p.Graph.LabeledEdges[edge.Label] = edge
 				}
 			}
 		}
 	}
+	return nil
 }
 
 // Parses a given piece of text into a graph
@@ -312,8 +340,16 @@ func Parse(text string) (*Graph, error) {
 	}
 
 	p := newGraphParser(tokens)
-	p.parseNodesAndEdges()
-	p.connectNodesAndEdges()
+
+	err = p.parseNodesAndEdges()
+	if err != nil {
+		return nil, err
+	}
+
+	err = p.connectNodesAndEdges()
+	if err != nil {
+		return nil, err
+	}
 
 	return p.Graph, nil
 }

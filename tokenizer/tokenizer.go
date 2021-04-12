@@ -116,7 +116,7 @@ func (tokenizer *Tokenizer) Next() (Token, error) {
 		token.Type = Label
 		for unicode.IsLetter(tokenizer.CurrentRune) || tokenizer.CurrentRune == rune(' ') {
 			token.Value += string(tokenizer.CurrentRune)
-			if !unicode.IsLetter(tokenizer.NextRune) {
+			if !unicode.IsLetter(tokenizer.NextRune) && !(tokenizer.NextRune == rune(' ')) {
 				break
 			}
 			err = tokenizer.advance()
