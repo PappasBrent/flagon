@@ -1,6 +1,8 @@
 Flagon
 =============================================
 [![Build Status](https://travis-ci.com/PappasBrent/flagon.svg?branch=main)](https://travis-ci.com/PappasBrent/flagon)
+[![codecov](https://codecov.io/gh/PappasBrent/flagon/branch/main/graph/badge.svg?token=OQPCDHSA95)](https://codecov.io/gh/PappasBrent/flagon)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 <img src="./logo.png" height="250" align="right"/>
 An ASCII graph parser written in Go.
