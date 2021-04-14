@@ -1,6 +1,6 @@
 Contributing to Flagon
 -----------------------
-Thank you for contributing! Here are some guidelines:
+Thank you for contributing! Here are some guidelines
 
 ## Creating Issues
 Please:
