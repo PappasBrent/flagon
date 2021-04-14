@@ -4,9 +4,10 @@ Thank you for contributing! Here are some guidelines
 
 ## Creating Issues
 Please:
-- provide a detailed explanation of the issue.
-- include an example of what is causing the issue to occur.
-- tag the issue appropriately.
+- Follow the provided issue templates.
+- Provide a detailed explanation of the issue.
+- If the issue is a bug, include an example of what is causing it.
+- Tag the issue appropriately.
 
 ## Creating Pull Requests
 Please:
