@@ -1,5 +1,6 @@
 Flagon
 =============================================
+[![Build Status](https://travis-ci.com/PappasBrent/flagon.svg?branch=main)](https://travis-ci.com/PappasBrent/flagon)
 
 <img src="./logo.png" height="250" align="right"/>
 An ASCII graph parser written in Go.
